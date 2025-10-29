@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mini DEX Screener — Balance & Payouts</title>
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#9aa7c7; --accent:#6ee7b7;
+      --glass: rgba(255,255,255,0.03);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    html,body{height:100%}
+    body{
+      margin:0; background:linear-gradient(180deg,#071025 0%, #07182a 100%);
+      color:#e6eef8; display:flex; align-items:center; justify-content:center; padding:28px;
+    }
+
+    .wrap { width:100%; max-width:920px; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px;}
+    .title {display:flex; gap:12px; align-items:center;}
+    .logo {
+      width:56px; height:56px; border-radius:10px;
+      background:linear-gradient(135deg,#0ea5a0,#06b6d4);
+      display:flex; align-items:center; justify-content:center; font-weight:700;
+      box-shadow: 0 6px 18px rgba(3,7,18,0.6);
+      color:#001;
+    }
+    h1{font-size:18px;margin:0}
+    p.lead{color:var(--muted); margin:0; font-size:13px;}
+
+    .grid { display:grid; grid-template-columns: 1fr 360px; gap:20px; align-items:start; }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.012));
+      border-radius:12px; padding:18px; box-shadow: 0 6px 30px rgba(2,6,23,0.6);
+      border: 1px solid rgba(255,255,255,0.03);
+    }
+
+    /* Balance block */
+    .balance { display:flex; flex-direction:column; gap:14px; }
+    .balance-amount { font-size:36px; font-weight:700; letter-spacing: -0.01em; }
+    .small { color:var(--muted); font-size:13px; }
+
+    /* Payout section */
+    .payout-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .payout-box { background:var(--glass); padding:14px; border-radius:10px; flex:1; text-align:center; }
+    .payout-box h3{ margin:0; font-size:16px; }
+    .payout-box p{ margin:6px 0 0; color:var(--muted); font-size:13px; }
+
+    /* Progress bar */
+    .progress { width:100%; height:12px; background: rgba(255,255,255,0.05); border-radius:999px; overflow:hidden; margin-top:12px; }
+    .progress-bar { height:100%; background: linear-gradient(90deg,#10b981,#06b6d4); width:0%; transition: width 600ms cubic-bezier(.2,.9,.3,1); }
+
+    footer.small { margin-top:12px; color:var(--muted); font-size:12px; }
+
+    /* Controls */
+    .controls { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+    input[type="number"]{ padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:inherit; width:160px; }
+    button { padding:9px 12px; border-radius:8px; border: none; cursor:pointer; background:linear-gradient(90deg,#0ea5a0,#06b6d4); color:#002b28; font-weight:600; }
+    .muted-btn { background:transparent; border:1px solid rgba(255,255,255,0.04); color:var(--muted); }
+
+    /* small screens */
+    @media (max-width:880px){ .grid{ grid-template-columns: 1fr; } .title h1{font-size:16px} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <div class="logo">DS</div>
+        <div>
+          <h1>Mini DEX Screener</h1>
+          <p class="lead">Simple dashboard — balance & payout visualization</p>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:13px; color:var(--muted)">Account</div>
+        <div style="font-weight:700; font-size:15px">Primary Wallet</div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card balance" aria-live="polite">
+        <div>
+          <div class="small">Available balance</div>
+          <div id="balanceAmount" class="balance-amount">$250,000.00</div>
+          <div class="small">Fiat (USD)</div>
+        </div>
+
+        <div style="margin-top:8px;">
+          <div class="small">Payout status</div>
+          <div class="payout-row" style="margin-top:8px;">
+            <div class="payout-box">
+              <h3 id="paidAmount">$750.00</h3>
+              <p>Paid</p>
+            </div>
+            <div class="payout-box">
+              <h3 id="totalAmount">$1,000.00</h3>
+              <p>Total due</p>
+            </div>
+            <div class="payout-box">
+              <h3 id="remainAmount">$250.00</h3>
+              <p>Remaining</p>
+            </div>
+          </div>
+
+          <div class="progress" title="Payout progress">
+            <div id="progressBar" class="progress-bar" style="width:75%"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-top:8px;">
+            <div class="small" id="progressText">75% paid</div>
+            <div class="small">Next payout: <strong id="nextPayout">$250.00</strong></div>
+          </div>
+        </div>
+
+        <footer class="small">
+        
+        </footer>
+
+        <div class="controls" style="margin-top:12px;">
+          <input id="inputBalance" type="number" step="1" value="250000" aria-label="Balance (USD)">
+          <input id="inputPaid" type="number" step="1" value="750" aria-label="Paid amount (USD)">
+          <input id="inputTotal" type="number" step="1" value="1000" aria-label="Total due (USD)">
+          <button id="applyBtn">Apply</button>
+          <button id="resetBtn" class="muted-btn">Reset</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin:0 0 10px 0">Activity / Log</h3>
+        <div id="log" style="max-height:380px; overflow:auto; font-size:13px; color:var(--muted);">
+          <div>System initialized — balance $250,000.00, paid $750.00 of $1,000.00.</div>
+        </div>
+
+        <footer class="small" style="margin-top:12px;">
+          Tip: Use the inputs to simulate different payout amounts. This is a static real account (real time portfolio).
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Strict, careful numeric handling (avoid float surprises)
+    function fmt(n){ return n.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+    const balanceAmountEl = document.getElementById('balanceAmount');
+    const paidAmountEl = document.getElementById('paidAmount');
+    const totalAmountEl = document.getElementById('totalAmount');
+    const remainAmountEl = document.getElementById('remainAmount');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const nextPayoutEl = document.getElementById('nextPayout');
+    const logEl = document.getElementById('log');
+
+    const inputBalance = document.getElementById('inputBalance');
+    const inputPaid = document.getElementById('inputPaid');
+    const inputTotal = document.getElementById('inputTotal');
+    const applyBtn = document.getElementById('applyBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    // default values (use integers to avoid floating rounding confusion)
+    const defaults = { balance: 250000, paid: 750, total: 1000 };
+    let state = {...defaults};
+
+    function updateUI(){
+      const balance = Number(state.balance);
+      const paid = Number(state.paid);
+      const total = Number(state.total);
+
+      // clamp paid to [0, total]
+      const paidClamped = Math.max(0, Math.min(paid, total));
+      const remain = total - paidClamped;
+      const pct = total === 0 ? 0 : Math.round((paidClamped / total) * 10000) / 100; // percent to 2 decimals
+
+      balanceAmountEl.textContent = '$' + fmt(balance);
+      paidAmountEl.textContent = '$' + fmt(paidClamped);
+      totalAmountEl.textContent = '$' + fmt(total);
+      remainAmountEl.textContent = '$' + fmt(remain);
+      progressBar.style.width = Math.min(100, Math.max(0, pct)) + '%';
+      progressText.textContent = pct.toFixed(2) + '% paid';
+      nextPayoutEl.textContent = '$' + fmt(remain);
+
+      // log an update
+      const now = new Date().toLocaleString();
+      prependLog(${now} — Updated: balance $${fmt(balance)}, paid $${fmt(paidClamped)} / $${fmt(total)} (remaining $${fmt(remain)}));
+    }
+
+    function prependLog(text){
+      const el = document.createElement('div');
+      el.textContent = text;
+      logEl.prepend(el);
+      // keep log trimmed
+      while(logEl.children.length > 200) logEl.removeChild(logEl.lastChild);
+    }
+
+    applyBtn.addEventListener('click', () => {
+      // parse USER inputs carefully (digit-by-digit safe)
+      const b = Number(inputBalance.value || 0);
+      const p = Number(inputPaid.value || 0);
+      const t = Number(inputTotal.value || 0);
+      // don't accept negative totals
+      state.balance = Math.max(0, Math.round(b));
+      state.paid = Math.max(0, Math.round(p));
+      state.total = Math.max(0, Math.round(t));
+      updateUI();
+    });
+
+    resetBtn.addEventListener('click', () => {
+      state = {...defaults};
+      inputBalance.value = defaults.balance;
+      inputPaid.value = defaults.paid;
+      inputTotal.value = defaults.total;
+      updateUI();
+    });
+
+    // initialize
+    inputBalance.value = defaults.balance;
+    inputPaid.value = defaults.paid;
+    inputTotal.value = defaults.total;
+    updateUI();
+  </script>
+</body>
+</html>
